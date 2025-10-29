@@ -9,8 +9,8 @@ export interface Card {
 export const useCardsStore = defineStore('cards', {
   state: () => ({
     cards: [
-      { question: 'Was ist Vue?', answer: 'Ein Frontend Framework.' },
-      { question: 'Was ist Spring Boot?', answer: 'Ein Java Backend Framework.' }
+      { question: 'Was ist 5x5?', answer: '25' },
+      { question: 'Was ist die Hauptstadt von Deutschland?', answer: 'Berlin' }
     ] as Card[]
   })
 })
