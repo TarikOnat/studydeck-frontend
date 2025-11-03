@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import axios from 'axios'
 
 export interface Card {
   id?: number
@@ -8,10 +9,26 @@ export interface Card {
 
 export const useCardsStore = defineStore('cards', {
   state: () => ({
-    cards: [
-      { question: 'Was ist 5x5?', answer: '25' },
-      { question: 'Was ist die Hauptstadt von Deutschland?', answer: 'Berlin' }
-    ] as Card[]
-  })
+    cards: [] as Card[],
+    loading: false,
+    error: ''
+  }),
+
+  actions: {
+    async loadCards() {
+      this.loading = true
+      this.error = ''
+
+      try {
+        const response = await axios.get('http://localhost:8080/api/cards')
+        this.cards = response.data
+      } catch (e) {
+        this.error = 'Karten konnten nicht geladen werden.'
+      } finally {
+        this.loading = false
+      }
+    }
+  }
 })
+
 
