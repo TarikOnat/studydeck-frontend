@@ -149,7 +149,7 @@ const getLearnedCount = (deck: any) => {
           </RouterLink>
         </div>
 
-        <div class="deck-menu">
+        <div class="deck-menu" v-if="editingDeck !== deck.id">
           <button @click="startEdit(deck.id!, deck.title)" class="btn-icon" title="Umbenennen">
             ✏️
           </button>

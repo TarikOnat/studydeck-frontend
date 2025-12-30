@@ -66,6 +66,10 @@ const markAsLearned = async () => {
     if (!currentCard.value.learned) {
       await cardsStore.toggleLearned(currentCard.value.id)
     }
+    // Remove from wrongCards if in repeat mode
+    if (learnMode.value === 'wrong') {
+      wrongCards.value = wrongCards.value.filter(id => id !== currentCard.value!.id)
+    }
     sessionStats.value.correct++
     nextCard()
   }
