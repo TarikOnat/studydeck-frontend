@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useDecksStore } from '@/stores/decks'
 import { useCardsStore } from '@/stores/cards'
@@ -12,13 +12,22 @@ const cardsStore = useCardsStore()
 const deckId = computed(() => Number(route.params.id))
 const currentIndex = ref(0)
 const isFlipped = ref(false)
+const hasBeenFlipped = ref(false) // Track if card was flipped at least once
 const showResults = ref(false)
 const sessionStats = ref({ correct: 0, incorrect: 0 })
+const wrongCards = ref<number[]>([]) // Store IDs of wrong cards
+const learnMode = ref<'all' | 'unlearned' | 'wrong'>('unlearned') // Current learning mode
 
-// Filter to only show unlearned cards, or all if all are learned
+// Get cards based on learning mode
 const cardsToLearn = computed(() => {
-  const unlearned = cardsStore.cards.filter(c => !c.learned)
-  return unlearned.length > 0 ? unlearned : cardsStore.cards
+  if (learnMode.value === 'wrong') {
+    return cardsStore.cards.filter(c => wrongCards.value.includes(c.id!))
+  } else if (learnMode.value === 'unlearned') {
+    const unlearned = cardsStore.cards.filter(c => !c.learned)
+    return unlearned.length > 0 ? unlearned : cardsStore.cards
+  } else {
+    return cardsStore.cards
+  }
 })
 
 const currentCard = computed(() => {
@@ -37,14 +46,23 @@ const isLastCard = computed(() => {
 onMounted(async () => {
   await decksStore.loadDeckById(deckId.value)
   await cardsStore.loadCardsByDeck(deckId.value)
+  window.addEventListener('keydown', handleKeydown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown)
 })
 
 const flipCard = () => {
   isFlipped.value = !isFlipped.value
+  if (!hasBeenFlipped.value) {
+    hasBeenFlipped.value = true
+  }
 }
 
 const markAsLearned = async () => {
   if (currentCard.value && currentCard.value.id) {
+    // Mark as learned in database if not already
     if (!currentCard.value.learned) {
       await cardsStore.toggleLearned(currentCard.value.id)
     }
@@ -54,12 +72,19 @@ const markAsLearned = async () => {
 }
 
 const markAsNotLearned = () => {
-  sessionStats.value.incorrect++
-  nextCard()
+  if (currentCard.value && currentCard.value.id) {
+    // Add to wrong cards list for potential repeat
+    if (!wrongCards.value.includes(currentCard.value.id)) {
+      wrongCards.value.push(currentCard.value.id)
+    }
+    sessionStats.value.incorrect++
+    nextCard()
+  }
 }
 
 const nextCard = () => {
   isFlipped.value = false
+  hasBeenFlipped.value = false
 
   if (isLastCard.value) {
     showResults.value = true
@@ -68,11 +93,26 @@ const nextCard = () => {
   }
 }
 
-const restartSession = () => {
+const restartSession = (mode: 'all' | 'wrong') => {
+  if (mode === 'wrong' && wrongCards.value.length === 0) {
+    // No wrong cards, restart all
+    mode = 'all'
+  }
+
+  learnMode.value = mode
   currentIndex.value = 0
   isFlipped.value = false
+  hasBeenFlipped.value = false
   showResults.value = false
-  sessionStats.value = { correct: 0, incorrect: 0 }
+
+  // Reset stats but keep wrongCards if practicing wrong ones
+  if (mode === 'all') {
+    sessionStats.value = { correct: 0, incorrect: 0 }
+    wrongCards.value = []
+  } else {
+    // Keep wrong cards, reset stats
+    sessionStats.value = { correct: 0, incorrect: 0 }
+  }
 }
 
 const goBack = () => {
@@ -94,18 +134,14 @@ const handleKeydown = (e: KeyboardEvent) => {
       break
     case 'ArrowRight':
     case 'KeyD':
-      if (isFlipped.value) markAsLearned()
+      if (hasBeenFlipped.value) markAsLearned()
       break
     case 'ArrowLeft':
     case 'KeyA':
-      if (isFlipped.value) markAsNotLearned()
+      if (hasBeenFlipped.value) markAsNotLearned()
       break
   }
 }
-
-onMounted(() => {
-  window.addEventListener('keydown', handleKeydown)
-})
 </script>
 
 <template>
@@ -120,6 +156,11 @@ onMounted(() => {
         {{ currentIndex + 1 }} / {{ cardsToLearn.length }}
       </div>
     </header>
+
+    <!-- Learning Mode Badge -->
+    <div v-if="learnMode === 'wrong'" class="mode-badge">
+      🔄 Wiederholung: Nur nicht gewusste Karten
+    </div>
 
     <!-- Progress Bar -->
     <div class="progress-bar-container">
@@ -180,9 +221,21 @@ onMounted(() => {
         </div>
 
         <div class="results-actions">
-          <button @click="restartSession" class="btn btn-secondary">
-            🔄 Nochmal üben
+          <!-- Repeat wrong cards only (if any) -->
+          <button
+            v-if="wrongCards.length > 0"
+            @click="restartSession('wrong')"
+            class="btn btn-wrong-repeat"
+          >
+            🔄 Nur falsche wiederholen ({{ wrongCards.length }})
           </button>
+
+          <!-- Repeat all cards -->
+          <button @click="restartSession('all')" class="btn btn-secondary">
+            🔁 Alle nochmal üben
+          </button>
+
+          <!-- Back to decks -->
           <button @click="goToDecks" class="btn btn-primary">
             📚 Zu den Decks
           </button>
@@ -206,16 +259,17 @@ onMounted(() => {
           <div class="flashcard-back">
             <span class="card-label">Antwort</span>
             <p class="card-text">{{ currentCard?.answer }}</p>
+            <span class="flip-hint">Klicken zum Zurückdrehen</span>
           </div>
         </div>
       </div>
 
-      <!-- Action Buttons (shown when card is flipped) -->
-      <div class="action-buttons" :class="{ visible: isFlipped }">
-        <button @click="markAsNotLearned" class="btn btn-wrong">
+      <!-- Action Buttons (shown after first flip, regardless of current side) -->
+      <div class="action-buttons" :class="{ visible: hasBeenFlipped }">
+        <button @click.stop="markAsNotLearned" class="btn btn-wrong">
           ✗ Nicht gewusst
         </button>
-        <button @click="markAsLearned" class="btn btn-correct">
+        <button @click.stop="markAsLearned" class="btn btn-correct">
           ✓ Gewusst!
         </button>
       </div>
@@ -276,6 +330,18 @@ onMounted(() => {
   background: #f0f0ff;
   padding: 0.5rem 1rem;
   border-radius: 20px;
+}
+
+/* Mode Badge */
+.mode-badge {
+  background: #fef3c7;
+  color: #92400e;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  text-align: center;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
 }
 
 /* Progress Bar */
@@ -594,15 +660,15 @@ kbd {
 
 .results-actions {
   display: flex;
-  gap: 1rem;
-  justify-content: center;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 /* Buttons */
 .btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
   padding: 0.875rem 1.5rem;
   border-radius: 12px;
@@ -612,6 +678,7 @@ kbd {
   border: none;
   cursor: pointer;
   transition: all 0.2s;
+  width: 100%;
 }
 
 .btn-primary {
@@ -631,6 +698,15 @@ kbd {
 
 .btn-secondary:hover {
   background: #e5e7eb;
+}
+
+.btn-wrong-repeat {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.btn-wrong-repeat:hover {
+  background: #fde68a;
 }
 
 @media (max-width: 640px) {

@@ -1,167 +1,231 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
+import { onMounted, computed } from 'vue'
+import { useDecksStore } from '@/stores/decks'
+
+const decksStore = useDecksStore()
+
+onMounted(() => {
+  decksStore.loadDecks()
+})
+
+const hasDecks = computed(() => decksStore.decks.length > 0)
 </script>
 
 <template>
   <div class="home">
-    <div class="hero">
-      <div class="hero-content">
-        <h1>📚 StudyDeck</h1>
-        <p class="tagline">Dein persönlicher Lernbegleiter für effektives Lernen mit Karteikarten</p>
+    <!-- Hero Section -->
+    <section class="hero">
+      <h1>📚 StudyDeck</h1>
+      <p class="subtitle">Lerne smarter mit digitalen Karteikarten</p>
+    </section>
 
-        <div class="features">
-          <div class="feature">
-            <span class="feature-icon">🎯</span>
-            <h3>Gezielt lernen</h3>
-            <p>Erstelle eigene Decks und Karteikarten für jedes Thema</p>
-          </div>
-          <div class="feature">
-            <span class="feature-icon">🔄</span>
-            <h3>Interaktiv üben</h3>
-            <p>Drehe Karten um und teste dein Wissen im Lernmodus</p>
-          </div>
-          <div class="feature">
-            <span class="feature-icon">📊</span>
-            <h3>Fortschritt verfolgen</h3>
-            <p>Behalte den Überblick über deinen Lernfortschritt</p>
-          </div>
+    <!-- Quick Actions -->
+    <section class="quick-actions">
+      <RouterLink to="/decks" class="action-card primary">
+        <span class="action-icon">📖</span>
+        <div class="action-content">
+          <h2>Meine Decks</h2>
+          <p v-if="hasDecks">{{ decksStore.decks.length }} Deck(s) vorhanden</p>
+          <p v-else>Erstelle dein erstes Deck</p>
         </div>
+        <span class="action-arrow">→</span>
+      </RouterLink>
 
-        <div class="cta-buttons">
-          <RouterLink to="/decks" class="btn btn-primary">
-            🚀 Jetzt starten
-          </RouterLink>
-          <RouterLink to="/stats" class="btn btn-secondary">
-            📈 Statistiken
-          </RouterLink>
+      <RouterLink to="/stats" class="action-card secondary">
+        <span class="action-icon">📊</span>
+        <div class="action-content">
+          <h2>Statistiken</h2>
+          <p>Verfolge deinen Fortschritt</p>
+        </div>
+        <span class="action-arrow">→</span>
+      </RouterLink>
+    </section>
+
+    <!-- How it works -->
+    <section class="how-it-works">
+      <h3>So funktioniert's</h3>
+      <div class="steps">
+        <div class="step">
+          <div class="step-number">1</div>
+          <p>Deck erstellen</p>
+        </div>
+        <div class="step-arrow">→</div>
+        <div class="step">
+          <div class="step-number">2</div>
+          <p>Karten hinzufügen</p>
+        </div>
+        <div class="step-arrow">→</div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <p>Lernen starten</p>
         </div>
       </div>
-    </div>
+    </section>
   </div>
 </template>
 
 <style scoped>
 .home {
-  min-height: calc(100vh - 120px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
 }
 
+/* Hero */
 .hero {
   text-align: center;
-  padding: 2rem;
-  max-width: 900px;
+  padding: 2rem 0 3rem;
 }
 
-.hero-content h1 {
-  font-size: 3.5rem;
-  margin-bottom: 1rem;
+.hero h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-.tagline {
-  font-size: 1.3rem;
+.subtitle {
+  font-size: 1.1rem;
   color: #6b7280;
-  margin-bottom: 3rem;
-  max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
 }
 
-.features {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 2rem;
+/* Quick Actions */
+.quick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
   margin-bottom: 3rem;
 }
 
-.feature {
-  background: white;
+.action-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
   padding: 1.5rem;
   border-radius: 16px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s, box-shadow 0.2s;
+  text-decoration: none;
+  transition: all 0.2s;
 }
 
-.feature:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
+.action-card.primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
 }
 
-.feature-icon {
-  font-size: 2.5rem;
-  display: block;
-  margin-bottom: 0.75rem;
+.action-card.primary:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
 }
 
-.feature h3 {
-  font-size: 1.1rem;
-  margin-bottom: 0.5rem;
+.action-card.secondary {
+  background: white;
   color: #1f2937;
+  border: 2px solid #e5e7eb;
 }
 
-.feature p {
+.action-card.secondary:hover {
+  border-color: #667eea;
+  background: #f9fafb;
+}
+
+.action-icon {
+  font-size: 2rem;
+}
+
+.action-content {
+  flex: 1;
+}
+
+.action-content h2 {
+  font-size: 1.25rem;
+  margin: 0 0 0.25rem 0;
+}
+
+.action-content p {
+  margin: 0;
   font-size: 0.9rem;
-  color: #6b7280;
-  line-height: 1.5;
+  opacity: 0.8;
 }
 
-.cta-buttons {
+.action-arrow {
+  font-size: 1.5rem;
+  opacity: 0.7;
+}
+
+/* How it works */
+.how-it-works {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.how-it-works h3 {
+  font-size: 1rem;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 1.5rem;
+}
+
+.steps {
   display: flex;
-  gap: 1rem;
+  align-items: center;
   justify-content: center;
+  gap: 1rem;
   flex-wrap: wrap;
 }
 
-.btn {
-  padding: 1rem 2rem;
-  border-radius: 12px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  text-decoration: none;
-  transition: all 0.2s;
-  display: inline-flex;
+.step {
+  display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 0.5rem;
 }
 
-.btn-primary {
+.step-number {
+  width: 40px;
+  height: 40px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  box-shadow: 0 4px 14px rgba(102, 126, 234, 0.4);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
 }
 
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+.step p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #374151;
 }
 
-.btn-secondary {
-  background: white;
-  color: #667eea;
-  border: 2px solid #667eea;
-}
-
-.btn-secondary:hover {
-  background: #667eea;
-  color: white;
+.step-arrow {
+  color: #d1d5db;
+  font-size: 1.25rem;
 }
 
 @media (max-width: 640px) {
-  .hero-content h1 {
-    font-size: 2.5rem;
+  .home {
+    padding: 1rem;
   }
 
-  .tagline {
-    font-size: 1.1rem;
+  .hero h1 {
+    font-size: 2rem;
   }
 
-  .features {
-    grid-template-columns: 1fr;
+  .steps {
+    flex-direction: column;
+  }
+
+  .step-arrow {
+    transform: rotate(90deg);
   }
 }
 </style>
