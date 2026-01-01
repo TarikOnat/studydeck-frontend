@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useDecksStore } from '@/stores/decks'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 
+const route = useRoute()
 const decksStore = useDecksStore()
 
 const showCreateModal = ref(false)
@@ -12,6 +13,10 @@ const editTitle = ref('')
 
 onMounted(() => {
   decksStore.loadDecks()
+  // Auto-open create modal if ?create=true
+  if (route.query.create === 'true') {
+    showCreateModal.value = true
+  }
 })
 
 const createDeck = async () => {

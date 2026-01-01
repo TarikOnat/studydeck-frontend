@@ -22,12 +22,22 @@ const hasDecks = computed(() => decksStore.decks.length > 0)
 
     <!-- Quick Actions -->
     <section class="quick-actions">
+      <!-- Neues Deck Button (nur wenn keine Decks vorhanden) -->
+      <RouterLink v-if="!hasDecks" to="/decks?create=true" class="action-card create">
+        <span class="action-icon">➕</span>
+        <div class="action-content">
+          <h2>Neues Deck erstellen</h2>
+          <p>Starte jetzt mit deinem ersten Deck</p>
+        </div>
+        <span class="action-arrow">→</span>
+      </RouterLink>
+
       <RouterLink to="/decks" class="action-card primary">
         <span class="action-icon">📖</span>
         <div class="action-content">
           <h2>Meine Decks</h2>
           <p v-if="hasDecks">{{ decksStore.decks.length }} Deck(s) vorhanden</p>
-          <p v-else>Erstelle dein erstes Deck</p>
+          <p v-else>Alle Decks ansehen</p>
         </div>
         <span class="action-arrow">→</span>
       </RouterLink>
@@ -119,6 +129,17 @@ const hasDecks = computed(() => decksStore.decks.length > 0)
 .action-card.primary:hover {
   transform: translateY(-3px);
   box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+}
+
+.action-card.create {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+}
+
+.action-card.create:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
 }
 
 .action-card.secondary {
