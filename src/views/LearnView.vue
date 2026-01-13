@@ -12,13 +12,12 @@ const cardsStore = useCardsStore()
 const deckId = computed(() => Number(route.params.id))
 const currentIndex = ref(0)
 const isFlipped = ref(false)
-const hasBeenFlipped = ref(false) // Track if card was flipped at least once
+const hasBeenFlipped = ref(false)
 const showResults = ref(false)
 const sessionStats = ref({ correct: 0, incorrect: 0 })
-const wrongCards = ref<number[]>([]) // Store IDs of wrong cards
-const learnMode = ref<'all' | 'unlearned' | 'wrong'>('unlearned') // Current learning mode
+const wrongCards = ref<number[]>([])
+const learnMode = ref<'all' | 'unlearned' | 'wrong'>('unlearned')
 
-// Get cards based on learning mode
 const cardsToLearn = computed(() => {
   if (learnMode.value === 'wrong') {
     return cardsStore.cards.filter(c => wrongCards.value.includes(c.id!))
@@ -62,11 +61,9 @@ const flipCard = () => {
 
 const markAsLearned = async () => {
   if (currentCard.value && currentCard.value.id) {
-    // Mark as learned in database if not already
     if (!currentCard.value.learned) {
       await cardsStore.toggleLearned(currentCard.value.id)
     }
-    // Remove from wrongCards if in repeat mode
     if (learnMode.value === 'wrong') {
       wrongCards.value = wrongCards.value.filter(id => id !== currentCard.value!.id)
     }
@@ -77,7 +74,6 @@ const markAsLearned = async () => {
 
 const markAsNotLearned = () => {
   if (currentCard.value && currentCard.value.id) {
-    // Add to wrong cards list for potential repeat
     if (!wrongCards.value.includes(currentCard.value.id)) {
       wrongCards.value.push(currentCard.value.id)
     }
@@ -99,7 +95,6 @@ const nextCard = () => {
 
 const restartSession = (mode: 'all' | 'wrong') => {
   if (mode === 'wrong' && wrongCards.value.length === 0) {
-    // No wrong cards, restart all
     mode = 'all'
   }
 
@@ -109,12 +104,10 @@ const restartSession = (mode: 'all' | 'wrong') => {
   hasBeenFlipped.value = false
   showResults.value = false
 
-  // Reset stats but keep wrongCards if practicing wrong ones
   if (mode === 'all') {
     sessionStats.value = { correct: 0, incorrect: 0 }
     wrongCards.value = []
   } else {
-    // Keep wrong cards, reset stats
     sessionStats.value = { correct: 0, incorrect: 0 }
   }
 }
@@ -127,7 +120,6 @@ const goToDecks = () => {
   router.push('/decks')
 }
 
-// Keyboard navigation
 const handleKeydown = (e: KeyboardEvent) => {
   if (showResults.value) return
 
@@ -153,7 +145,10 @@ const handleKeydown = (e: KeyboardEvent) => {
     <!-- Header -->
     <header class="learn-header">
       <button @click="goBack" class="btn-back">
-        ← Zurück zum Deck
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+        Zurück
       </button>
       <h1>{{ decksStore.currentDeck?.title }}</h1>
       <div class="progress-indicator">
@@ -163,7 +158,11 @@ const handleKeydown = (e: KeyboardEvent) => {
 
     <!-- Learning Mode Badge -->
     <div v-if="learnMode === 'wrong'" class="mode-badge">
-      🔄 Wiederholung: Nur nicht gewusste Karten
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="23 4 23 10 17 10"></polyline>
+        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+      </svg>
+      Wiederholung: Nur nicht gewusste Karten
     </div>
 
     <!-- Progress Bar -->
@@ -181,35 +180,45 @@ const handleKeydown = (e: KeyboardEvent) => {
 
     <!-- No Cards -->
     <div v-else-if="cardsToLearn.length === 0" class="empty-state">
-      <div class="empty-icon">🎉</div>
+      <div class="empty-icon">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+      </div>
       <h2>Keine Karten zum Lernen</h2>
       <p>Füge erst Karten zu diesem Deck hinzu!</p>
       <button @click="goBack" class="btn btn-primary">
-        📝 Zum Deck
+        Zum Deck
       </button>
     </div>
 
     <!-- Results Screen -->
     <div v-else-if="showResults" class="results-screen">
       <div class="results-card">
-        <div class="results-icon">🎉</div>
+        <div class="results-icon">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+        </div>
         <h2>Geschafft!</h2>
         <p>Du hast alle {{ cardsToLearn.length }} Karten durchgearbeitet.</p>
 
         <div class="results-stats">
           <div class="stat correct">
             <span class="stat-value">{{ sessionStats.correct }}</span>
-            <span class="stat-label">Gewusst ✓</span>
+            <span class="stat-label">Gewusst</span>
           </div>
           <div class="stat incorrect">
             <span class="stat-value">{{ sessionStats.incorrect }}</span>
-            <span class="stat-label">Wiederholen ✗</span>
+            <span class="stat-label">Wiederholen</span>
           </div>
         </div>
 
         <div class="results-percentage">
           <div class="percentage-ring">
-            <svg viewBox="0 0 36 36" class="circular-chart">
+            <svg viewBox="0 0 36 36">
               <path class="circle-bg"
                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
               />
@@ -225,23 +234,33 @@ const handleKeydown = (e: KeyboardEvent) => {
         </div>
 
         <div class="results-actions">
-          <!-- Repeat wrong cards only (if any) -->
           <button
             v-if="wrongCards.length > 0"
             @click="restartSession('wrong')"
-            class="btn btn-wrong-repeat"
+            class="btn btn-warning"
           >
-            🔄 Nur falsche wiederholen ({{ wrongCards.length }})
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+            </svg>
+            Falsche wiederholen ({{ wrongCards.length }})
           </button>
 
-          <!-- Repeat all cards -->
           <button @click="restartSession('all')" class="btn btn-secondary">
-            🔁 Alle nochmal üben
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="1 4 1 10 7 10"></polyline>
+              <polyline points="23 20 23 14 17 14"></polyline>
+              <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
+            </svg>
+            Alle nochmal üben
           </button>
 
-          <!-- Back to decks -->
           <button @click="goToDecks" class="btn btn-primary">
-            📚 Zu den Decks
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+            </svg>
+            Zu den Decks
           </button>
         </div>
       </div>
@@ -258,23 +277,46 @@ const handleKeydown = (e: KeyboardEvent) => {
           <div class="flashcard-front">
             <span class="card-label">Frage</span>
             <p class="card-text">{{ currentCard?.question }}</p>
-            <span class="flip-hint">Klicken zum Umdrehen</span>
+            <span class="flip-hint">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="17 1 21 5 17 9"></polyline>
+                <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+                <polyline points="7 23 3 19 7 15"></polyline>
+                <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+              </svg>
+              Klicken zum Umdrehen
+            </span>
           </div>
           <div class="flashcard-back">
             <span class="card-label">Antwort</span>
             <p class="card-text">{{ currentCard?.answer }}</p>
-            <span class="flip-hint">Klicken zum Zurückdrehen</span>
+            <span class="flip-hint">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="17 1 21 5 17 9"></polyline>
+                <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+                <polyline points="7 23 3 19 7 15"></polyline>
+                <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+              </svg>
+              Klicken zum Zurückdrehen
+            </span>
           </div>
         </div>
       </div>
 
-      <!-- Action Buttons (shown after first flip, regardless of current side) -->
+      <!-- Action Buttons -->
       <div class="action-buttons" :class="{ visible: hasBeenFlipped }">
         <button @click.stop="markAsNotLearned" class="btn btn-wrong">
-          ✗ Nicht gewusst
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+          Nicht gewusst
         </button>
         <button @click.stop="markAsLearned" class="btn btn-correct">
-          ✓ Gewusst!
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+          Gewusst
         </button>
       </div>
 
@@ -298,6 +340,7 @@ const handleKeydown = (e: KeyboardEvent) => {
   flex-direction: column;
 }
 
+/* Header */
 .learn-header {
   display: flex;
   justify-content: space-between;
@@ -309,42 +352,54 @@ const handleKeydown = (e: KeyboardEvent) => {
 
 .learn-header h1 {
   font-size: 1.25rem;
-  color: #1f2937;
+  font-weight: 700;
+  color: #1e293b;
   margin: 0;
 }
 
 .btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background: #f3f4f6;
-  border: none;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 0.9rem;
-  color: #374151;
-  transition: background 0.2s;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #64748b;
+  transition: all 0.15s;
 }
 
 .btn-back:hover {
-  background: #e5e7eb;
+  background: white;
+  color: #1e293b;
+  border-color: #cbd5e1;
 }
 
 .progress-indicator {
   font-weight: 600;
-  color: #667eea;
-  background: #f0f0ff;
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
   padding: 0.5rem 1rem;
   border-radius: 20px;
+  font-size: 0.9rem;
 }
 
 /* Mode Badge */
 .mode-badge {
-  background: #fef3c7;
-  color: #92400e;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: rgba(251, 191, 36, 0.15);
+  color: #b45309;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
   text-align: center;
   margin-bottom: 1rem;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   font-weight: 500;
 }
 
@@ -355,14 +410,14 @@ const handleKeydown = (e: KeyboardEvent) => {
 
 .progress-bar {
   height: 6px;
-  background: #e5e7eb;
+  background: #e2e8f0;
   border-radius: 3px;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(90deg, #1e3a5f 0%, #3b82f6 100%);
   border-radius: 3px;
   transition: width 0.3s ease;
 }
@@ -374,16 +429,16 @@ const handleKeydown = (e: KeyboardEvent) => {
   align-items: center;
   justify-content: center;
   flex: 1;
-  color: #6b7280;
+  color: #64748b;
 }
 
 .spinner {
-  width: 48px;
-  height: 48px;
-  border: 4px solid #e5e7eb;
-  border-top-color: #667eea;
+  width: 44px;
+  height: 44px;
+  border: 3px solid rgba(59, 130, 246, 0.1);
+  border-top-color: #3b82f6;
   border-radius: 50%;
-  animation: spin 1s linear infinite;
+  animation: spin 0.8s linear infinite;
   margin-bottom: 1rem;
 }
 
@@ -403,8 +458,20 @@ const handleKeydown = (e: KeyboardEvent) => {
 }
 
 .empty-icon {
-  font-size: 4rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  color: #94a3b8;
+}
+
+.empty-state h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+  color: #64748b;
+  margin-bottom: 1.5rem;
 }
 
 /* Flashcard Container */
@@ -451,26 +518,27 @@ const handleKeydown = (e: KeyboardEvent) => {
   align-items: center;
   justify-content: center;
   text-align: center;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15);
 }
 
 .flashcard-front {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1e3a5f 0%, #3b82f6 100%);
   color: white;
 }
 
 .flashcard-back {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
   color: white;
   transform: rotateY(180deg);
 }
 
 .card-label {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   opacity: 0.8;
   margin-bottom: 1rem;
+  font-weight: 600;
 }
 
 .card-text {
@@ -485,8 +553,11 @@ const handleKeydown = (e: KeyboardEvent) => {
 .flip-hint {
   position: absolute;
   bottom: 1.5rem;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   opacity: 0.7;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 /* Action Buttons */
@@ -506,53 +577,62 @@ const handleKeydown = (e: KeyboardEvent) => {
 }
 
 .btn-wrong {
-  background: #fee2e2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(239, 68, 68, 0.1);
   color: #dc2626;
   padding: 1rem 2rem;
   border-radius: 12px;
   font-size: 1rem;
   font-weight: 600;
-  border: none;
+  border: 1px solid rgba(239, 68, 68, 0.2);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .btn-wrong:hover {
-  background: #fecaca;
+  background: rgba(239, 68, 68, 0.15);
   transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2);
 }
 
 .btn-correct {
-  background: #d1fae5;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(16, 185, 129, 0.1);
   color: #059669;
   padding: 1rem 2rem;
   border-radius: 12px;
   font-size: 1rem;
   font-weight: 600;
-  border: none;
+  border: 1px solid rgba(16, 185, 129, 0.2);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .btn-correct:hover {
-  background: #a7f3d0;
+  background: rgba(16, 185, 129, 0.15);
   transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
 }
 
 /* Keyboard Hints */
 .keyboard-hints {
   display: flex;
   gap: 1.5rem;
-  color: #9ca3af;
-  font-size: 0.85rem;
+  color: #94a3b8;
+  font-size: 0.8rem;
 }
 
 kbd {
-  background: #f3f4f6;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid #e2e8f0;
   padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+  border-radius: 6px;
   font-family: inherit;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   margin-right: 0.25rem;
 }
 
@@ -565,28 +645,30 @@ kbd {
 }
 
 .results-card {
-  background: white;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
   border-radius: 24px;
   padding: 3rem;
   text-align: center;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
   max-width: 450px;
   width: 100%;
 }
 
 .results-icon {
-  font-size: 4rem;
   margin-bottom: 1rem;
 }
 
 .results-card h2 {
   font-size: 2rem;
-  color: #1f2937;
+  font-weight: 700;
+  color: #1e293b;
   margin-bottom: 0.5rem;
 }
 
 .results-card > p {
-  color: #6b7280;
+  color: #64748b;
   margin-bottom: 2rem;
 }
 
@@ -608,8 +690,8 @@ kbd {
 }
 
 .results-stats .stat-label {
-  font-size: 0.9rem;
-  color: #6b7280;
+  font-size: 0.875rem;
+  color: #64748b;
 }
 
 .results-stats .correct .stat-value {
@@ -632,21 +714,19 @@ kbd {
   position: relative;
 }
 
-.circular-chart {
-  display: block;
-  width: 100%;
-  height: 100%;
+.percentage-ring svg {
+  transform: rotate(-90deg);
 }
 
 .circle-bg {
   fill: none;
-  stroke: #e5e7eb;
+  stroke: #e2e8f0;
   stroke-width: 3;
 }
 
 .circle {
   fill: none;
-  stroke: #667eea;
+  stroke: #3b82f6;
   stroke-width: 3;
   stroke-linecap: round;
   transition: stroke-dasharray 0.5s;
@@ -659,7 +739,7 @@ kbd {
   transform: translate(-50%, -50%);
   font-size: 1.5rem;
   font-weight: 700;
-  color: #667eea;
+  color: #3b82f6;
 }
 
 .results-actions {
@@ -676,7 +756,7 @@ kbd {
   gap: 0.5rem;
   padding: 0.875rem 1.5rem;
   border-radius: 12px;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
   text-decoration: none;
   border: none;
@@ -686,31 +766,35 @@ kbd {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1e3a5f 0%, #3b82f6 100%);
   color: white;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.25);
 }
 
 .btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.35);
 }
 
 .btn-secondary {
-  background: #f3f4f6;
-  color: #374151;
+  background: rgba(255, 255, 255, 0.8);
+  color: #475569;
+  border: 1px solid #e2e8f0;
 }
 
 .btn-secondary:hover {
-  background: #e5e7eb;
+  background: white;
+  border-color: #cbd5e1;
 }
 
-.btn-wrong-repeat {
-  background: #fef3c7;
-  color: #92400e;
+.btn-warning {
+  background: rgba(251, 191, 36, 0.15);
+  color: #b45309;
+  border: 1px solid rgba(251, 191, 36, 0.3);
 }
 
-.btn-wrong-repeat:hover {
-  background: #fde68a;
+.btn-warning:hover {
+  background: rgba(251, 191, 36, 0.25);
 }
 
 @media (max-width: 640px) {
