@@ -28,12 +28,6 @@ const router = createRouter({
       meta: { title: 'Lernmodus' }
     },
     {
-      path: '/stats',
-      name: 'stats',
-      component: () => import('../views/StatsView.vue'),
-      meta: { title: 'Statistiken' }
-    },
-    {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: () => import('../views/NotFoundView.vue'),
