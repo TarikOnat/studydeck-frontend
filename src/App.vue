@@ -6,7 +6,13 @@ import { RouterLink, RouterView } from 'vue-router'
   <div id="app">
     <nav class="navbar">
       <RouterLink to="/" class="nav-brand">
-        📚 StudyDeck
+        <span class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+          </svg>
+        </span>
+        StudyDeck
       </RouterLink>
       <div class="nav-links">
         <RouterLink to="/decks" class="nav-link">Meine Decks</RouterLink>
@@ -18,12 +24,14 @@ import { RouterLink, RouterView } from 'vue-router'
     </main>
 
     <footer class="footer">
-      <p>© 2025 StudyDeck - HTW Berlin WebTech Projekt</p>
+      <p>© 2025 StudyDeck · HTW Berlin WebTech Projekt</p>
     </footer>
   </div>
 </template>
 
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
 * {
   margin: 0;
   padding: 0;
@@ -31,10 +39,12 @@ import { RouterLink, RouterView } from 'vue-router'
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-  background: #f5f7fb;
-  color: #1f2937;
-  line-height: 1.6;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 50%, #f0f9ff 100%);
+  background-attachment: fixed;
+  color: #1e293b;
+  line-height: 1.5;
+  min-height: 100vh;
 }
 
 #app {
@@ -44,21 +54,25 @@ body {
 }
 
 .navbar {
-  background: white;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
   padding: 1rem 2rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.5);
   position: sticky;
   top: 0;
   z-index: 100;
 }
 
 .nav-brand {
-  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.25rem;
   font-weight: 700;
-  color: #667eea;
+  color: #1e3a5f;
   text-decoration: none;
   transition: opacity 0.2s;
 }
@@ -67,28 +81,36 @@ body {
   opacity: 0.8;
 }
 
+.brand-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #3b82f6;
+}
+
 .nav-links {
   display: flex;
   gap: 0.5rem;
 }
 
 .nav-link {
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
+  padding: 0.6rem 1.1rem;
+  border-radius: 10px;
   text-decoration: none;
-  color: #6b7280;
+  color: #64748b;
   font-weight: 500;
+  font-size: 0.9rem;
   transition: all 0.2s;
 }
 
 .nav-link:hover {
-  background: #f3f4f6;
-  color: #1f2937;
+  background: rgba(59, 130, 246, 0.08);
+  color: #1e293b;
 }
 
 .nav-link.router-link-active {
-  background: #eef2ff;
-  color: #667eea;
+  background: linear-gradient(135deg, #1e3a5f 0%, #3b82f6 100%);
+  color: white;
 }
 
 .main-content {
@@ -96,24 +118,22 @@ body {
 }
 
 .footer {
-  background: white;
-  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  padding: 1.25rem;
   text-align: center;
-  color: #9ca3af;
-  font-size: 0.875rem;
-  margin-top: auto;
+  color: #64748b;
+  font-size: 0.8rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.5);
 }
 
 @media (max-width: 640px) {
   .navbar {
-    flex-direction: column;
-    gap: 1rem;
     padding: 1rem;
   }
 
-  .nav-links {
-    width: 100%;
-    justify-content: center;
+  .nav-brand span:last-child {
+    display: none;
   }
 }
 </style>
