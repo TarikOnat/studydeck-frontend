@@ -28,6 +28,12 @@ const router = createRouter({
       meta: { title: 'Lernmodus' }
     },
     {
+      path: '/decks/:id/quiz',
+      name: 'quiz',
+      component: () => import('../views/QuizView.vue'),
+      meta: { title: 'Quiz-Modus' }
+    },
+    {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: () => import('../views/NotFoundView.vue'),

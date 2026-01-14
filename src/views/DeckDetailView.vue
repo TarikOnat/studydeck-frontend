@@ -102,6 +102,18 @@ const goBack = () => {
         </svg>
         Lernen starten
       </RouterLink>
+      <RouterLink
+        :to="`/decks/${deckId}/quiz`"
+        class="btn btn-quiz"
+        :class="{ disabled: cardsStore.cards.length === 0 }"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+        Quiz starten
+      </RouterLink>
     </div>
 
     <!-- Progress Bar -->
@@ -563,6 +575,23 @@ const goBack = () => {
 }
 
 .btn-success.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.btn-quiz {
+  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.25);
+}
+
+.btn-quiz:hover:not(.disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(168, 85, 247, 0.35);
+}
+
+.btn-quiz.disabled {
   opacity: 0.5;
   cursor: not-allowed;
   pointer-events: none;
