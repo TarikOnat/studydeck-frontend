@@ -37,9 +37,6 @@ const currentProgress = computed(() => {
   return Math.round((currentCardIndex.value / allCardIds.value.length) * 100)
 })
 
-const isLastCard = computed(() => {
-  return currentCardIndex.value >= allCardIds.value.length - 1
-})
 
 onMounted(async () => {
   await decksStore.loadDeckById(deckId.value)
@@ -79,7 +76,7 @@ const loadCurrentQuestion = async () => {
 
   // Modus rotieren basierend auf Index
   const modeIndex = currentCardIndex.value % 3
-  const currentMode = quizModes[modeIndex]
+  const currentMode = quizModes[modeIndex] as QuizType
 
   // Frage generieren
   currentQuestion.value = await generateQuestion(card, currentMode)
@@ -119,7 +116,7 @@ const generateQuestion = async (card: any, mode: QuizType): Promise<QuizQuestion
       const otherCards = cardsStore.cards.filter(c => c.id !== card.id)
       if (otherCards.length > 0) {
         const randomCard = otherCards[Math.floor(Math.random() * otherCards.length)]
-        question.displayedAnswer = randomCard.answer
+        question.displayedAnswer = randomCard?.answer || 'Falsche Antwort'
       } else {
         question.displayedAnswer = 'Falsche Antwort'
       }
