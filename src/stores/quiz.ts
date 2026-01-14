@@ -21,6 +21,7 @@ export interface QuizAnswer {
   cardId: number
   userAnswer: string
   type: QuizType
+  displayedAnswer?: string
 }
 
 export interface QuizResult {

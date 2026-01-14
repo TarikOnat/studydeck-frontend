@@ -215,10 +215,17 @@ const getProgress = (deck: any) => {
           </RouterLink>
           <RouterLink
             :to="`/decks/${deck.id}/learn`"
-            class="btn btn-primary"
+            class="btn btn-success"
             :class="{ disabled: getCardCount(deck) === 0 }"
           >
             Lernen
+          </RouterLink>
+          <RouterLink
+            :to="`/decks/${deck.id}/quiz`"
+            class="btn btn-quiz"
+            :class="{ disabled: getCardCount(deck) === 0 }"
+          >
+            Quiz
           </RouterLink>
         </div>
       </div>
@@ -567,6 +574,42 @@ const getProgress = (deck: any) => {
   pointer-events: none;
 }
 
+.btn-success {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.25);
+}
+
+.btn-success:hover:not(:disabled):not(.disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
+}
+
+.btn-success:disabled,
+.btn-success.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.btn-quiz {
+  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(168, 85, 247, 0.25);
+}
+
+.btn-quiz:hover:not(:disabled):not(.disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(168, 85, 247, 0.35);
+}
+
+.btn-quiz:disabled,
+.btn-quiz.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .btn-secondary {
   background: rgba(255, 255, 255, 0.8);
   color: #475569;
@@ -710,6 +753,10 @@ const getProgress = (deck: any) => {
 
   .deck-menu {
     opacity: 1;
+  }
+
+  .deck-actions {
+    flex-wrap: wrap;
   }
 }
 </style>

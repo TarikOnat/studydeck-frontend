@@ -42,7 +42,8 @@ const handleAnswer = async (userAnswer: string) => {
   const result = await quizStore.checkAnswer({
     cardId: quizStore.currentQuestion.cardId,
     userAnswer,
-    type: quizStore.currentQuestion.type
+    type: quizStore.currentQuestion.type,
+    displayedAnswer: quizStore.currentQuestion.displayedAnswer
   })
 
   if (result) {
