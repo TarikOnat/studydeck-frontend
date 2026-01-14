@@ -2,8 +2,9 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useDecksStore } from '@/stores/decks'
+import { useCardsStore } from '@/stores/cards'
 import { useQuizStore, QuizType } from '@/stores/quiz'
-import type { QuizResult } from '@/stores/quiz'
+import type { QuizResult, QuizQuestion } from '@/stores/quiz'
 
 // Components
 import MultipleChoiceQuiz from '@/components/MultipleChoiceQuiz.vue'
@@ -13,53 +14,157 @@ import FreeTextQuiz from '@/components/FreeTextQuiz.vue'
 const route = useRoute()
 const router = useRouter()
 const decksStore = useDecksStore()
+const cardsStore = useCardsStore()
 const quizStore = useQuizStore()
 
 const deckId = computed(() => Number(route.params.id))
+
+// Quiz State
+const allCardIds = ref<number[]>([])
+const currentCardIndex = ref(0)
+const currentQuestion = ref<QuizQuestion | null>(null)
 const showResult = ref(false)
 const lastResult = ref<QuizResult | null>(null)
 const showFinalResults = ref(false)
+const score = ref(0)
+const totalQuestions = ref(0)
+
+// Modi rotieren: 0 = MC, 1 = TF, 2 = FT
+const quizModes = [QuizType.MULTIPLE_CHOICE, QuizType.TRUE_FALSE, QuizType.FREE_TEXT]
+
+const currentProgress = computed(() => {
+  if (allCardIds.value.length === 0) return 0
+  return Math.round((currentCardIndex.value / allCardIds.value.length) * 100)
+})
+
+const isLastCard = computed(() => {
+  return currentCardIndex.value >= allCardIds.value.length - 1
+})
 
 onMounted(async () => {
   await decksStore.loadDeckById(deckId.value)
+  await cardsStore.loadCardsByDeck(deckId.value)
+
+  // Alle Card-IDs speichern
+  allCardIds.value = cardsStore.cards.map(c => c.id!).filter(id => id !== undefined)
+
+  if (allCardIds.value.length === 0) {
+    showFinalResults.value = true
+    return
+  }
+
   quizStore.resetQuiz()
-  await loadNextQuestion()
+  score.value = 0
+  totalQuestions.value = allCardIds.value.length
+
+  await loadCurrentQuestion()
 })
 
-const loadNextQuestion = async () => {
+const loadCurrentQuestion = async () => {
+  if (currentCardIndex.value >= allCardIds.value.length) {
+    showFinalResults.value = true
+    return
+  }
+
   showResult.value = false
   lastResult.value = null
-  const question = await quizStore.fetchNextQuestion(deckId.value)
 
-  if (!question) {
-    showFinalResults.value = true
+  const cardId = allCardIds.value[currentCardIndex.value]
+  const card = cardsStore.cards.find(c => c.id === cardId)
+
+  if (!card) {
+    nextQuestion()
+    return
   }
+
+  // Modus rotieren basierend auf Index
+  const modeIndex = currentCardIndex.value % 3
+  const currentMode = quizModes[modeIndex]
+
+  // Frage generieren
+  currentQuestion.value = await generateQuestion(card, currentMode)
+}
+
+const generateQuestion = async (card: any, mode: QuizType): Promise<QuizQuestion> => {
+  const question: QuizQuestion = {
+    cardId: card.id,
+    question: card.question,
+    type: mode,
+    options: undefined,
+    displayedAnswer: undefined
+  }
+
+  if (mode === QuizType.MULTIPLE_CHOICE) {
+    // 4 Optionen generieren
+    const options = [card.answer]
+    const otherCards = cardsStore.cards.filter(c => c.id !== card.id)
+
+    // 3 falsche Antworten von anderen Cards
+    const shuffledOthers = [...otherCards].sort(() => Math.random() - 0.5)
+    shuffledOthers.slice(0, 3).forEach(c => options.push(c.answer))
+
+    // Falls weniger als 4 Cards, Dummy-Antworten
+    while (options.length < 4) {
+      options.push(`Option ${options.length + 1}`)
+    }
+
+    question.options = options.sort(() => Math.random() - 0.5)
+  } else if (mode === QuizType.TRUE_FALSE) {
+    // 50% richtig, 50% falsch
+    const showCorrect = Math.random() < 0.5
+
+    if (showCorrect) {
+      question.displayedAnswer = card.answer
+    } else {
+      const otherCards = cardsStore.cards.filter(c => c.id !== card.id)
+      if (otherCards.length > 0) {
+        const randomCard = otherCards[Math.floor(Math.random() * otherCards.length)]
+        question.displayedAnswer = randomCard.answer
+      } else {
+        question.displayedAnswer = 'Falsche Antwort'
+      }
+    }
+  }
+
+  return question
 }
 
 const handleAnswer = async (userAnswer: string) => {
-  if (!quizStore.currentQuestion) return
+  if (!currentQuestion.value) return
 
   const result = await quizStore.checkAnswer({
-    cardId: quizStore.currentQuestion.cardId,
+    cardId: currentQuestion.value.cardId,
     userAnswer,
-    type: quizStore.currentQuestion.type,
-    displayedAnswer: quizStore.currentQuestion.displayedAnswer
+    type: currentQuestion.value.type,
+    displayedAnswer: currentQuestion.value.displayedAnswer
   })
 
   if (result) {
     lastResult.value = result
     showResult.value = true
+
+    if (result.correct) {
+      score.value++
+    }
   }
 }
 
 const nextQuestion = () => {
-  loadNextQuestion()
+  currentCardIndex.value++
+
+  if (currentCardIndex.value >= allCardIds.value.length) {
+    showFinalResults.value = true
+  } else {
+    loadCurrentQuestion()
+  }
 }
 
 const restartQuiz = () => {
-  quizStore.resetQuiz()
+  currentCardIndex.value = 0
+  score.value = 0
   showFinalResults.value = false
-  loadNextQuestion()
+  quizStore.resetQuiz()
+  loadCurrentQuestion()
 }
 
 const goBack = () => {
@@ -83,12 +188,23 @@ const goToDecks = () => {
       </button>
       <h1>{{ decksStore.currentDeck?.title }} - Quiz</h1>
       <div class="score-indicator">
-        {{ quizStore.score }} / {{ quizStore.totalQuestions }}
+        {{ score }} / {{ totalQuestions }}
       </div>
     </header>
 
+    <!-- Progress Bar -->
+    <div v-if="!showFinalResults && allCardIds.length > 0" class="progress-bar-container">
+      <div class="progress-info">
+        <span>Frage {{ currentCardIndex + 1 }} von {{ allCardIds.length }}</span>
+        <span class="progress-percentage">{{ currentProgress }}%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" :style="{ width: `${currentProgress}%` }"></div>
+      </div>
+    </div>
+
     <!-- Loading -->
-    <div v-if="quizStore.loading && !quizStore.currentQuestion" class="loading">
+    <div v-if="cardsStore.loading" class="loading">
       <div class="spinner"></div>
       <p>Quiz wird geladen...</p>
     </div>
@@ -103,15 +219,15 @@ const goToDecks = () => {
           </svg>
         </div>
         <h2>Quiz beendet!</h2>
-        <p>Du hast {{ quizStore.totalQuestions }} Fragen beantwortet.</p>
+        <p>Du hast alle {{ totalQuestions }} Fragen beantwortet.</p>
 
         <div class="results-stats">
           <div class="stat correct">
-            <span class="stat-value">{{ quizStore.score }}</span>
+            <span class="stat-value">{{ score }}</span>
             <span class="stat-label">Richtig</span>
           </div>
           <div class="stat incorrect">
-            <span class="stat-value">{{ quizStore.totalQuestions - quizStore.score }}</span>
+            <span class="stat-value">{{ totalQuestions - score }}</span>
             <span class="stat-label">Falsch</span>
           </div>
         </div>
@@ -123,12 +239,12 @@ const goToDecks = () => {
                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
               />
               <path class="circle"
-                    :stroke-dasharray="`${quizStore.totalQuestions > 0 ? (quizStore.score / quizStore.totalQuestions) * 100 : 0}, 100`"
+                    :stroke-dasharray="`${totalQuestions > 0 ? (score / totalQuestions) * 100 : 0}, 100`"
                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
               />
             </svg>
             <span class="percentage-text">
-              {{ quizStore.totalQuestions > 0 ? Math.round((quizStore.score / quizStore.totalQuestions) * 100) : 0 }}%
+              {{ totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0 }}%
             </span>
           </div>
         </div>
@@ -155,17 +271,17 @@ const goToDecks = () => {
     </div>
 
     <!-- Quiz Questions -->
-    <div v-else-if="quizStore.currentQuestion" class="quiz-container">
+    <div v-else-if="currentQuestion" class="quiz-container">
       <!-- Mode Badge -->
       <div class="mode-badge">
-        <span v-if="quizStore.currentQuestion.type === QuizType.MULTIPLE_CHOICE">
+        <span v-if="currentQuestion.type === QuizType.MULTIPLE_CHOICE">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10"></circle>
             <circle cx="12" cy="12" r="4"></circle>
           </svg>
           Multiple Choice
         </span>
-        <span v-else-if="quizStore.currentQuestion.type === QuizType.TRUE_FALSE">
+        <span v-else-if="currentQuestion.type === QuizType.TRUE_FALSE">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M9 11l3 3L22 4"></path>
             <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
@@ -183,8 +299,8 @@ const goToDecks = () => {
 
       <!-- Question Components -->
       <MultipleChoiceQuiz
-        v-if="quizStore.currentQuestion.type === QuizType.MULTIPLE_CHOICE"
-        :question="quizStore.currentQuestion"
+        v-if="currentQuestion.type === QuizType.MULTIPLE_CHOICE"
+        :question="currentQuestion"
         :show-result="showResult"
         :result="lastResult"
         @answer="handleAnswer"
@@ -192,8 +308,8 @@ const goToDecks = () => {
       />
 
       <TrueFalseQuiz
-        v-else-if="quizStore.currentQuestion.type === QuizType.TRUE_FALSE"
-        :question="quizStore.currentQuestion"
+        v-else-if="currentQuestion.type === QuizType.TRUE_FALSE"
+        :question="currentQuestion"
         :show-result="showResult"
         :result="lastResult"
         @answer="handleAnswer"
@@ -202,7 +318,7 @@ const goToDecks = () => {
 
       <FreeTextQuiz
         v-else
-        :question="quizStore.currentQuestion"
+        :question="currentQuestion"
         :show-result="showResult"
         :result="lastResult"
         @answer="handleAnswer"
@@ -227,7 +343,7 @@ const goToDecks = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
   flex-wrap: wrap;
   gap: 1rem;
 }
@@ -267,6 +383,38 @@ const goToDecks = () => {
   padding: 0.5rem 1rem;
   border-radius: 20px;
   font-size: 0.9rem;
+}
+
+/* Progress Bar */
+.progress-bar-container {
+  margin-bottom: 2rem;
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.progress-percentage {
+  font-weight: 700;
+  color: #3b82f6;
+}
+
+.progress-bar {
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #1e3a5f 0%, #3b82f6 100%);
+  border-radius: 3px;
+  transition: width 0.3s ease;
 }
 
 /* Mode Badge */
@@ -322,7 +470,7 @@ const goToDecks = () => {
   flex-direction: column;
 }
 
-/* Results Screen (same as LearnView) */
+/* Results Screen */
 .results-screen {
   flex: 1;
   display: flex;
