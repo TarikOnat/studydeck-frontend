@@ -10,14 +10,6 @@ onMounted(() => {
 })
 
 const hasDecks = computed(() => decksStore.decks.length > 0)
-const totalCards = computed(() => {
-  return decksStore.decks.reduce((sum, deck) => sum + (deck.cards?.length || 0), 0)
-})
-const learnedCards = computed(() => {
-  return decksStore.decks.reduce((sum, deck) => {
-    return sum + (deck.cards?.filter((c: any) => c.learned).length || 0)
-  }, 0)
-})
 </script>
 
 <template>
@@ -27,49 +19,6 @@ const learnedCards = computed(() => {
       <div class="hero-content">
         <h1>StudyDeck</h1>
         <p class="subtitle">Dein persönlicher Lernbegleiter für effektives Lernen mit Karteikarten</p>
-      </div>
-    </section>
-
-    <!-- Stats Cards (wenn Decks vorhanden) -->
-    <section v-if="hasDecks" class="stats-section">
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-            </svg>
-          </div>
-          <div class="stat-info">
-            <span class="stat-number">{{ decksStore.decks.length }}</span>
-            <span class="stat-label">Decks</span>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="2" y="4" width="20" height="16" rx="2"></rect>
-              <path d="M7 15h10"></path>
-              <path d="M7 11h4"></path>
-            </svg>
-          </div>
-          <div class="stat-info">
-            <span class="stat-number">{{ totalCards }}</span>
-            <span class="stat-label">Karten</span>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon success">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-              <polyline points="22 4 12 14.01 9 11.01"></polyline>
-            </svg>
-          </div>
-          <div class="stat-info">
-            <span class="stat-number">{{ learnedCards }}</span>
-            <span class="stat-label">Gelernt</span>
-          </div>
-        </div>
       </div>
     </section>
 
@@ -94,7 +43,7 @@ const learnedCards = computed(() => {
         </div>
       </RouterLink>
 
-      <RouterLink to="/decks?create=true" class="action-card secondary">
+      <RouterLink to="/decks?create=true" class="action-card primary">
         <div class="action-icon">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -179,61 +128,6 @@ const learnedCards = computed(() => {
   line-height: 1.6;
 }
 
-/* Stats Section */
-.stats-section {
-  margin-bottom: 2rem;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-}
-
-.stat-card {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  border-radius: 16px;
-  padding: 1.25rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-}
-
-.stat-icon {
-  width: 48px;
-  height: 48px;
-  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #3b82f6;
-}
-
-.stat-icon.success {
-  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
-  color: #10b981;
-}
-
-.stat-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.stat-number {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.stat-label {
-  font-size: 0.875rem;
-  color: #64748b;
-}
-
 /* Actions Section */
 .actions-section {
   display: flex;
@@ -268,25 +162,6 @@ const learnedCards = computed(() => {
 .action-card.primary .action-icon {
   background: rgba(255, 255, 255, 0.15);
   color: white;
-}
-
-.action-card.secondary {
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  color: #1e293b;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-}
-
-.action-card.secondary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
-  border-color: #3b82f6;
-}
-
-.action-card.secondary .action-icon {
-  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-  color: #3b82f6;
 }
 
 .action-icon {
@@ -409,10 +284,6 @@ const learnedCards = computed(() => {
 
   .hero h1 {
     font-size: 2rem;
-  }
-
-  .stats-grid {
-    grid-template-columns: 1fr;
   }
 
   .steps-container {

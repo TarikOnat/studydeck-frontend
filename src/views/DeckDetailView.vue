@@ -23,13 +23,34 @@ onMounted(async () => {
 })
 
 const addCard = async () => {
-  if (newQuestion.value.trim() && newAnswer.value.trim()) {
-    await cardsStore.addCard(newQuestion.value.trim(), newAnswer.value.trim(), deckId.value)
-    newQuestion.value = ''
-    newAnswer.value = ''
-    showAddModal.value = false
-    await decksStore.loadDeckById(deckId.value)
+  const trimmedQuestion = newQuestion.value.trim()
+  const trimmedAnswer = newAnswer.value.trim()
+
+  if (!trimmedQuestion) {
+    alert('❌ Bitte gib eine Frage ein!')
+    return
   }
+
+  if (trimmedQuestion.length < 3) {
+    alert('❌ Frage muss mindestens 3 Zeichen lang sein!')
+    return
+  }
+
+  if (!trimmedAnswer) {
+    alert('❌ Bitte gib eine Antwort ein!')
+    return
+  }
+
+  if (trimmedAnswer.length < 1) {
+    alert('❌ Antwort darf nicht leer sein!')
+    return
+  }
+
+  await cardsStore.addCard(trimmedQuestion, trimmedAnswer, deckId.value)
+  newQuestion.value = ''
+  newAnswer.value = ''
+  showAddModal.value = false
+  await decksStore.loadDeckById(deckId.value)
 }
 
 const openEditModal = (card: any) => {
@@ -38,16 +59,34 @@ const openEditModal = (card: any) => {
 }
 
 const saveEdit = async () => {
-  if (editingCard.value && editingCard.value.question.trim() && editingCard.value.answer.trim()) {
-    await cardsStore.updateCard(
-      editingCard.value.id,
-      editingCard.value.question.trim(),
-      editingCard.value.answer.trim(),
-      editingCard.value.learned
-    )
-    showEditModal.value = false
-    editingCard.value = null
+  if (!editingCard.value) return
+
+  const trimmedQuestion = editingCard.value.question.trim()
+  const trimmedAnswer = editingCard.value.answer.trim()
+
+  if (!trimmedQuestion) {
+    alert('❌ Bitte gib eine Frage ein!')
+    return
   }
+
+  if (trimmedQuestion.length < 3) {
+    alert('❌ Frage muss mindestens 3 Zeichen lang sein!')
+    return
+  }
+
+  if (!trimmedAnswer) {
+    alert('❌ Bitte gib eine Antwort ein!')
+    return
+  }
+
+  await cardsStore.updateCard(
+    editingCard.value.id,
+    trimmedQuestion,
+    trimmedAnswer,
+    editingCard.value.learned
+  )
+  showEditModal.value = false
+  editingCard.value = null
 }
 
 const deleteCard = async (cardId: number) => {
@@ -216,7 +255,6 @@ const goBack = () => {
               v-model="newQuestion"
               placeholder="Gib hier die Frage ein..."
               rows="3"
-              required
             ></textarea>
           </div>
           <div class="form-group">
@@ -226,14 +264,13 @@ const goBack = () => {
               v-model="newAnswer"
               placeholder="Gib hier die Antwort ein..."
               rows="3"
-              required
             ></textarea>
           </div>
           <div class="modal-actions">
             <button type="button" @click="showAddModal = false" class="btn btn-secondary">
               Abbrechen
             </button>
-            <button type="submit" class="btn btn-primary" :disabled="!newQuestion.trim() || !newAnswer.trim()">
+            <button type="submit" class="btn btn-primary">
               Erstellen
             </button>
           </div>
@@ -252,7 +289,6 @@ const goBack = () => {
               id="editQuestion"
               v-model="editingCard.question"
               rows="3"
-              required
             ></textarea>
           </div>
           <div class="form-group">
@@ -261,7 +297,6 @@ const goBack = () => {
               id="editAnswer"
               v-model="editingCard.answer"
               rows="3"
-              required
             ></textarea>
           </div>
           <div class="form-group checkbox-group">

@@ -35,11 +35,26 @@ const sortedDecks = computed(() => {
 })
 
 const createDeck = async () => {
-  if (newDeckTitle.value.trim()) {
-    await decksStore.createDeck(newDeckTitle.value.trim())
-    newDeckTitle.value = ''
-    showCreateModal.value = false
+  const trimmedTitle = newDeckTitle.value.trim()
+
+  if (!trimmedTitle) {
+    alert('❌ Bitte gib einen Titel ein!')
+    return
   }
+
+  if (trimmedTitle.length < 3) {
+    alert('❌ Titel muss mindestens 3 Zeichen lang sein!')
+    return
+  }
+
+  if (trimmedTitle.length > 100) {
+    alert('❌ Titel darf maximal 100 Zeichen lang sein!')
+    return
+  }
+
+  await decksStore.createDeck(trimmedTitle)
+  newDeckTitle.value = ''
+  showCreateModal.value = false
 }
 
 const startEdit = (deckId: number, currentTitle: string) => {
@@ -48,11 +63,26 @@ const startEdit = (deckId: number, currentTitle: string) => {
 }
 
 const saveEdit = async (deckId: number) => {
-  if (editTitle.value.trim()) {
-    await decksStore.updateDeck(deckId, editTitle.value.trim())
-    editingDeck.value = null
-    editTitle.value = ''
+  const trimmedTitle = editTitle.value.trim()
+
+  if (!trimmedTitle) {
+    alert('❌ Bitte gib einen Titel ein!')
+    return
   }
+
+  if (trimmedTitle.length < 3) {
+    alert('❌ Titel muss mindestens 3 Zeichen lang sein!')
+    return
+  }
+
+  if (trimmedTitle.length > 100) {
+    alert('❌ Titel darf maximal 100 Zeichen lang sein!')
+    return
+  }
+
+  await decksStore.updateDeck(deckId, trimmedTitle)
+  editingDeck.value = null
+  editTitle.value = ''
 }
 
 const cancelEdit = () => {
@@ -243,7 +273,6 @@ const getProgress = (deck: any) => {
               v-model="newDeckTitle"
               type="text"
               placeholder="z.B. Englisch Vokabeln"
-              required
               autofocus
             />
           </div>
@@ -251,7 +280,7 @@ const getProgress = (deck: any) => {
             <button type="button" @click="showCreateModal = false" class="btn btn-secondary">
               Abbrechen
             </button>
-            <button type="submit" class="btn btn-primary" :disabled="!newDeckTitle.trim()">
+            <button type="submit" class="btn btn-primary">
               Erstellen
             </button>
           </div>
