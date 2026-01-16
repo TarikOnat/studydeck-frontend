@@ -18,15 +18,10 @@ const sessionStats = ref({ correct: 0, incorrect: 0 })
 const wrongCards = ref<number[]>([])
 const learnMode = ref<'all' | 'unlearned' | 'wrong'>('unlearned')
 
+const initialCards = ref<any[]>([])
+
 const cardsToLearn = computed(() => {
-  if (learnMode.value === 'wrong') {
-    return cardsStore.cards.filter(c => wrongCards.value.includes(c.id!))
-  } else if (learnMode.value === 'unlearned') {
-    const unlearned = cardsStore.cards.filter(c => !c.learned)
-    return unlearned.length > 0 ? unlearned : cardsStore.cards
-  } else {
-    return cardsStore.cards
-  }
+  return initialCards.value
 })
 
 const currentCard = computed(() => {
@@ -45,12 +40,24 @@ const isLastCard = computed(() => {
 onMounted(async () => {
   await decksStore.loadDeckById(deckId.value)
   await cardsStore.loadCardsByDeck(deckId.value)
+  initializeCards()
   window.addEventListener('keydown', handleKeydown)
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
 })
+
+const initializeCards = () => {
+  if (learnMode.value === 'wrong') {
+    initialCards.value = cardsStore.cards.filter(c => wrongCards.value.includes(c.id!))
+  } else if (learnMode.value === 'unlearned') {
+    const unlearned = cardsStore.cards.filter(c => !c.learned)
+    initialCards.value = unlearned.length > 0 ? unlearned : cardsStore.cards
+  } else {
+    initialCards.value = [...cardsStore.cards]
+  }
+}
 
 const flipCard = () => {
   isFlipped.value = !isFlipped.value
@@ -110,6 +117,8 @@ const restartSession = (mode: 'all' | 'wrong') => {
   } else {
     sessionStats.value = { correct: 0, incorrect: 0 }
   }
+
+  initializeCards()
 }
 
 const goBack = () => {
@@ -142,7 +151,6 @@ const handleKeydown = (e: KeyboardEvent) => {
 
 <template>
   <div class="learn-view">
-    <!-- Header -->
     <header class="learn-header">
       <button @click="goBack" class="btn-back">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -156,7 +164,6 @@ const handleKeydown = (e: KeyboardEvent) => {
       </div>
     </header>
 
-    <!-- Learning Mode Badge -->
     <div v-if="learnMode === 'wrong'" class="mode-badge">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <polyline points="23 4 23 10 17 10"></polyline>
@@ -165,20 +172,17 @@ const handleKeydown = (e: KeyboardEvent) => {
       Wiederholung: Nur nicht gewusste Karten
     </div>
 
-    <!-- Progress Bar -->
     <div class="progress-bar-container">
       <div class="progress-bar">
         <div class="progress-fill" :style="{ width: `${progress}%` }"></div>
       </div>
     </div>
 
-    <!-- Loading -->
     <div v-if="cardsStore.loading" class="loading">
       <div class="spinner"></div>
       <p>Karten werden geladen...</p>
     </div>
 
-    <!-- No Cards -->
     <div v-else-if="cardsToLearn.length === 0" class="empty-state">
       <div class="empty-icon">
         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -193,7 +197,6 @@ const handleKeydown = (e: KeyboardEvent) => {
       </button>
     </div>
 
-    <!-- Results Screen -->
     <div v-else-if="showResults" class="results-screen">
       <div class="results-card">
         <div class="results-icon">
@@ -266,7 +269,6 @@ const handleKeydown = (e: KeyboardEvent) => {
       </div>
     </div>
 
-    <!-- Flashcard -->
     <div v-else class="flashcard-container">
       <div
         class="flashcard"
@@ -303,7 +305,6 @@ const handleKeydown = (e: KeyboardEvent) => {
         </div>
       </div>
 
-      <!-- Action Buttons -->
       <div class="action-buttons" :class="{ visible: hasBeenFlipped }">
         <button @click.stop="markAsNotLearned" class="btn btn-wrong">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -320,7 +321,6 @@ const handleKeydown = (e: KeyboardEvent) => {
         </button>
       </div>
 
-      <!-- Keyboard Hints -->
       <div class="keyboard-hints">
         <span><kbd>Leertaste</kbd> Umdrehen</span>
         <span><kbd>←</kbd> Nicht gewusst</span>
@@ -340,7 +340,6 @@ const handleKeydown = (e: KeyboardEvent) => {
   flex-direction: column;
 }
 
-/* Header */
 .learn-header {
   display: flex;
   justify-content: space-between;
@@ -387,7 +386,6 @@ const handleKeydown = (e: KeyboardEvent) => {
   font-size: 0.9rem;
 }
 
-/* Mode Badge */
 .mode-badge {
   display: flex;
   align-items: center;
@@ -403,7 +401,6 @@ const handleKeydown = (e: KeyboardEvent) => {
   font-weight: 500;
 }
 
-/* Progress Bar */
 .progress-bar-container {
   margin-bottom: 2rem;
 }
@@ -422,7 +419,6 @@ const handleKeydown = (e: KeyboardEvent) => {
   transition: width 0.3s ease;
 }
 
-/* Loading */
 .loading {
   display: flex;
   flex-direction: column;
@@ -446,7 +442,6 @@ const handleKeydown = (e: KeyboardEvent) => {
   to { transform: rotate(360deg); }
 }
 
-/* Empty State */
 .empty-state {
   text-align: center;
   padding: 4rem 2rem;
@@ -474,7 +469,6 @@ const handleKeydown = (e: KeyboardEvent) => {
   margin-bottom: 1.5rem;
 }
 
-/* Flashcard Container */
 .flashcard-container {
   flex: 1;
   display: flex;
@@ -484,7 +478,6 @@ const handleKeydown = (e: KeyboardEvent) => {
   gap: 2rem;
 }
 
-/* Flashcard */
 .flashcard {
   width: 100%;
   max-width: 500px;
@@ -560,7 +553,6 @@ const handleKeydown = (e: KeyboardEvent) => {
   gap: 0.5rem;
 }
 
-/* Action Buttons */
 .action-buttons {
   display: flex;
   gap: 1rem;
@@ -618,7 +610,6 @@ const handleKeydown = (e: KeyboardEvent) => {
   box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
 }
 
-/* Keyboard Hints */
 .keyboard-hints {
   display: flex;
   gap: 1.5rem;
@@ -636,7 +627,6 @@ kbd {
   margin-right: 0.25rem;
 }
 
-/* Results Screen */
 .results-screen {
   flex: 1;
   display: flex;
@@ -702,7 +692,6 @@ kbd {
   color: #ef4444;
 }
 
-/* Percentage Ring */
 .results-percentage {
   margin-bottom: 2rem;
 }
@@ -748,7 +737,6 @@ kbd {
   gap: 0.75rem;
 }
 
-/* Buttons */
 .btn {
   display: inline-flex;
   align-items: center;
